@@ -1,0 +1,86 @@
+---
+services:
+  ####################
+  # Backend  service #
+  ####################
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: backend
+    depends_on:
+      - mongodb
+    expose:
+      - "5000"
+    networks:
+      - url-shortener
+    restart: unless-stopped
+    volumes:
+      - uploads:/app/uploads
+
+  ##################
+  # Client service #
+  ##################
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: frontend
+    depends_on:
+      - mongodb
+    expose:
+      - "5173" 
+    networks:
+      - url-shortener
+    restart: unless-stopped
+
+  ####################
+  # DataBase service #
+  ####################
+  mongodb:
+    hostname: mongodb
+    image: mongodb/mongodb-atlas-local:8.0.7
+    environment:
+      - MONGODB_INITDB_ROOT_USERNAME=kaap
+      - MONGODB_INITDB_ROOT_PASSWORD=kaap
+    expose:
+      - "27017"
+    volumes:
+      - data:/data/db
+      - config:/data/configdb
+    networks:
+      - url-shortener
+    restart: unless-stopped
+
+  #################
+  # Nginx service #
+  #################
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    container_name: nginx
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - url-shortener
+    ports:
+      - "80:80"
+      - "443:443"
+    restart: unless-stopped
+
+
+##########################
+## Volumes and Networks ##
+##########################
+
+volumes:
+  data:
+  config:
+  uploads:
+
+
+networks:
+  url-shortener:
+    driver: bridge
